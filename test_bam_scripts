@@ -1,0 +1,161 @@
+#! /bin/bash
+
+#####################################################
+# TODO: Simplify the REF directory so that it only includes
+#       the files you need. Download them from the web
+#       after you get it working with the current files?
+#       Remove files from bonsai.
+#####################################################
+
+d=/Applications/U54
+
+#docker run \
+#  --rm \
+#  -i -t \
+#  srp33/somatic_wgs:latest \
+#  /bin/bash
+
+docker run --rm srp33/somatic_wgs:latest
+exit
+#docker run --rm srp33/somatic_wgs:latest bwa_mem_align -h
+#docker run --rm srp33/somatic_wgs:latest sort_bam -h
+#docker run --rm srp33/somatic_wgs:latest index_bam -h
+#docker run --rm srp33/somatic_wgs:latest mark_duplicates -h
+#docker run --rm srp33/somatic_wgs:latest slice_bam -h
+#docker run --rm srp33/somatic_wgs:latest merge_bams -h
+#docker run --rm srp33/somatic_wgs:latest add_read_groups -h
+
+#docker run \
+#  -v $d/ref_genome:/data/ref_genome \
+#  -v $d/ref_index:/data/ref_index \
+#  -v $d/SampleData:/data/input_data \
+#  -v /tmp:/data/output_data \
+#  --user $(id -u):$(id -g) \
+#  --rm \
+#  srp33/somatic_wgs:latest \
+#  bwa_mem_align \
+#    -r ucsc.hg19.fasta.gz \
+#    -s1 101024.1.fastq.gz \
+#    -s2 101024.2.fastq.gz \
+#    -o test.bam \
+#    --log test.log \
+#    -t 25
+
+# Trying it with a file and dir name that has spaces
+#mkdir -p "/tmp/test dir"
+#docker run \
+#  -v $d/ref_genome:/data/ref_genome \
+#  -v $d/ref_index:/data/ref_index \
+#  -v $d/SampleData:/data/input_data \
+#  -v "/tmp/test dir":/data/output_data \
+#  --user $(id -u):$(id -g) \
+#  --rm \
+#  srp33/somatic_wgs:latest \
+#  bwa_mem_align \
+#    -r ucsc.hg19.fasta.gz \
+#    -s1 101024.1.fastq.gz \
+#    -s2 101024.2.fastq.gz \
+#    -o "test abc.bam" \
+#    --log test.log \
+#    -t 25
+
+#rm -rf /tmp/sorted
+#mkdir -p /tmp/sorted
+
+#docker run \
+#  -v /tmp:/data/bam_files \
+#  -v /tmp/sorted:/data/output_data \
+#  --user $(id -u):$(id -g) \
+#  --rm \
+#  srp33/somatic_wgs:latest \
+#  sort_bam \
+#    -b test.bam \
+#    -o test.bam \
+#    --log test.log \
+#    -t 25
+
+#docker run \
+#  -v /tmp/sorted:/data/bam_files \
+#  --user $(id -u):$(id -g) \
+#  --rm \
+#  srp33/somatic_wgs:latest \
+#  index_bam \
+#    -b test.bam \
+#    -t 5
+
+#rm -rf /tmp/marked
+#mkdir -p /tmp/marked
+
+#docker run \
+#  -v /tmp/sorted:/data/bam_files \
+#  -v /tmp/marked:/data/output_data \
+#  --user $(id -u):$(id -g) \
+#  --rm \
+#  srp33/somatic_wgs:latest \
+#  mark_duplicates \
+#    -b test.bam \
+#    -o test.bam \
+#    --log test.log \
+#    -t 5
+
+#rm -rf /tmp/sliced
+#mkdir -p /tmp/sliced
+
+#docker run \
+#  -v /tmp/marked:/data/bam_files \
+#  -v /tmp/sliced:/data/output_data \
+#  --user $(id -u):$(id -g) \
+#  --rm \
+#  srp33/somatic_wgs:latest \
+#  slice_bam \
+#    -b test.bam \
+#    -r chr1 \
+#    -o test.chr1.bam \
+#    --log test.chr1.log \
+#    -t 25
+
+#docker run \
+#  -v /tmp/marked:/data/bam_files \
+#  -v /tmp/sliced:/data/output_data \
+#  --user $(id -u):$(id -g) \
+#  --rm \
+#  srp33/somatic_wgs:latest \
+#  slice_bam \
+#    -b test.bam \
+#    -r chr2:1000-1000000 \
+#    -o test.chr2.bam \
+#    --log test.chr2.log \
+#    -t 5
+
+#rm -rf /tmp/merged
+#mkdir -p /tmp/merged
+
+#docker run \
+#  -v /tmp/sliced:/data/bam_files \
+#  -v /tmp/merged:/data/output_data \
+#  --user $(id -u):$(id -g) \
+#  --rm \
+#  srp33/somatic_wgs:latest \
+#  merge_bams \
+#    -b test.chr1.bam \
+#    -b test.chr2.bam \
+#    -o test.bam \
+#    --log test.log \
+#    -t 5
+
+#rm -rf /tmp/read_groups
+#mkdir -p /tmp/read_groups
+
+#docker run \
+#  -v /tmp:/data/bam_files \
+#  -v /tmp/read_groups:/data/output_data \
+#  --user $(id -u):$(id -g) \
+#  --rm \
+#  srp33/somatic_wgs:latest \
+#  add_read_groups \
+#    -b test.bam \
+#    -o test.bam \
+#    --log test.log \
+#    -id group \
+#    -lb library \
+#    -s sample

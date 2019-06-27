@@ -1,0 +1,265 @@
+#! /bin/bash
+
+d=/Applications/U54
+currentDir=$(pwd)
+
+#docker run --rm srp33/somatic_wgs:latest
+#docker run --rm srp33/somatic_wgs:latest base_recalibrator -h
+#docker run --rm srp33/somatic_wgs:latest apply_bqsr -h
+#docker run --rm srp33/somatic_wgs:latest call_somatic_variants_gatk4 -h
+#docker run --rm srp33/somatic_wgs:latest sort_bam -h
+#docker run --rm srp33/somatic_wgs:latest samblast -h
+docker run --rm srp33/somatic_wgs:latest call_structural_variants_lumpy -h
+exit
+#docker run --rm srp33/somatic_wgs:latest call_structural_variants_manta -h
+#docker run --rm srp33/somatic_wgs:latest call_somatic_variants_strelka -h
+#docker run --rm srp33/somatic_wgs:latest call_structural_variants_delly -h
+#exit
+
+#sudo rm -rf /tmp/bwa /tmp/sorted /tmp/marked /tmp/read_groups /tmp/bqsr /tmp/bqsr_corrected /tmp/gatk4 /tmp/samblast_input /tmp/samblast /tmp/lumpy /tmp/lumpy_input /tmp/manta /tmp/strelka /tmp/delly
+mkdir -p /tmp/bwa /tmp/sorted /tmp/marked /tmp/read_groups /tmp/bqsr /tmp/bqsr_corrected /tmp/gatk4 /tmp/samblast_input /tmp/samblast /tmp/lumpy /tmp/lumpy_input /tmp/manta /tmp/strelka /tmp/delly
+
+function prep_sample {
+  sampleID=$1
+
+  docker run \
+    -v $d/ref_genome:/data/ref_genome \
+    -v $d/ref_index:/data/ref_index \
+    -v $d/SampleData:/data/input_data \
+    -v /tmp/bwa:/data/output_data \
+    --user $(id -u):$(id -g) \
+    --rm \
+    srp33/somatic_wgs:latest \
+    bwa_mem_align \
+      -r ucsc.hg19.fasta.gz \
+      -s1 $sampleID.1.fastq.gz \
+      -s2 $sampleID.2.fastq.gz \
+      -o $sampleID.bam \
+      -t 25
+
+  docker run \
+    -v /tmp/bwa:/data/bam_files \
+    -v /tmp/sorted:/data/output_data \
+    --user $(id -u):$(id -g) \
+    --rm \
+    srp33/somatic_wgs:latest \
+    sort_bam \
+      -b $sampleID.bam \
+      -o $sampleID.bam \
+      -t 25
+
+  docker run \
+    -v /tmp/sorted:/data/bam_files \
+    --user $(id -u):$(id -g) \
+    --rm \
+    srp33/somatic_wgs:latest \
+    index_bam \
+      -b $sampleID.bam \
+      -t 25
+
+  docker run \
+    -v /tmp/sorted:/data/bam_files \
+    -v /tmp/marked:/data/output_data \
+    --user $(id -u):$(id -g) \
+    --rm \
+    srp33/somatic_wgs:latest \
+    mark_duplicates \
+      -b $sampleID.bam \
+      -o $sampleID.bam \
+      -t 25
+
+  docker run \
+    -v /tmp/marked:/data/bam_files \
+    -v /tmp/read_groups:/data/output_data \
+    --user $(id -u):$(id -g) \
+    --rm \
+    srp33/somatic_wgs:latest \
+    add_read_groups \
+      -b $sampleID.bam \
+      -o $sampleID.bam \
+      -id $sampleID \
+      -lb $sampleID \
+      -s $sampleID
+
+  docker run \
+    -v /tmp/read_groups:/data/bam_files \
+    --user $(id -u):$(id -g) \
+    --rm \
+    srp33/somatic_wgs:latest \
+    index_bam \
+      -b $sampleID.bam \
+      -t 25
+
+  docker run \
+    -v /tmp/read_groups:/data/bam_files \
+    -v $d/ref_genome:/data/ref_genome \
+    -v $d/ref_index:/data/ref_index \
+    -v $currentDir/vcf_files:/data/vcf_files \
+    -v /tmp/bqsr:/data/output_data \
+    --user $(id -u):$(id -g) \
+    --rm \
+    srp33/somatic_wgs:latest \
+    base_recalibrator \
+      -b $sampleID.bam \
+      -r ucsc.hg19.fasta.gz \
+      -s 1000G_phase1.snps.high_confidence.hg19.sites.vcf \
+      -s Mills_and_1000G_gold_standard.indels.hg19.sites.vcf \
+      -o $sampleID.recal
+
+  docker run \
+    -v /tmp/read_groups:/data/bam_files \
+    -v /tmp/bqsr:/data/input_data \
+    -v /tmp/bqsr_corrected:/data/output_data \
+    --user $(id -u):$(id -g) \
+    --rm \
+    srp33/somatic_wgs:latest \
+    apply_bqsr \
+      -b $sampleID.bam \
+      -bqsr $sampleID.recal \
+      -o $sampleID.bam
+
+  docker run \
+    -v /tmp/bqsr_corrected:/data/bam_files \
+    --user $(id -u):$(id -g) \
+    --rm \
+    srp33/somatic_wgs:latest \
+    index_bam \
+      -b $sampleID.bam \
+      -t 25
+}
+
+#wget ftp://gsapubftp-anonymous@ftp.broadinstitute.org/bundle/hg19/1000G_phase1.snps.high_confidence.hg19.sites.vcf.gz
+#wget ftp://gsapubftp-anonymous@ftp.broadinstitute.org/bundle/hg19/Mills_and_1000G_gold_standard.indels.hg19.sites.vcf.gz
+### Don't need to use all three for testing
+###wget ftp://gsapubftp-anonymous@ftp.broadinstitute.org/bundle/hg19/dbsnp_138.hg19.vcf.gz
+
+#gunzip 1000G_phase1.snps.high_confidence.hg19.sites.vcf.gz
+#gunzip Mills_and_1000G_gold_standard.indels.hg19.sites.vcf.gz
+#mkdir -p vcf_files
+#mv 1000G_phase1.snps.high_confidence.hg19.sites.vcf vcf_files/
+#mv Mills_and_1000G_gold_standard.indels.hg19.sites.vcf vcf_files/
+
+#prep_sample 101024
+#prep_sample 101025
+
+#docker run \
+#  -v /tmp/bqsr_corrected:/data/bam_files \
+#  -v $d/ref_genome:/data/ref_genome \
+#  -v $d/ref_index:/data/ref_index \
+#  -v /tmp/gatk4:/data/output_data \
+#  --user $(id -u):$(id -g) \
+#  --rm \
+#  srp33/somatic_wgs:latest \
+#  call_somatic_variants_gatk4 \
+#    -n 101024.bam \
+#    -ns 101024 \
+#    -t 101025.bam \
+#    -ts 101025 \
+#    -r ucsc.hg19.fasta.gz \
+#    -o 101025.vcf \
+#    --log 101025.log
+
+#docker run \
+#  -v /tmp/bqsr_corrected:/data/bam_files \
+#  -v /tmp/samblast_input:/data/output_data \
+#  --user $(id -u):$(id -g) \
+#  --rm \
+#  srp33/somatic_wgs:latest \
+#  sort_bam \
+#    -b 101025.bam \
+#    -o 101025.bam \
+#    -t 12 \
+#    -n
+
+#docker run \
+#  -v /tmp/samblast_input:/data/bam_files \
+#  -v /tmp/samblast:/data/output_data \
+#  --user $(id -u):$(id -g) \
+#  --rm \
+#  srp33/somatic_wgs:latest \
+#  samblast \
+#    -b 101025.bam \
+#    -d 101025.discordant.bam \
+#    -s 101025.split.bam
+
+#cp /tmp/bqsr_corrected/101025.bam /tmp/lumpy_input/
+
+#docker run \
+#  -v /tmp/samblast:/data/bam_files \
+#  -v /tmp/lumpy_input:/data/output_data \
+#  --user $(id -u):$(id -g) \
+#  --rm \
+#  srp33/somatic_wgs:latest \
+#  sort_bam \
+#    -b 101025.discordant.bam \
+#    -o 101025.discordant.bam \
+#    -t 12
+
+#docker run \
+#  -v /tmp/samblast:/data/bam_files \
+#  -v /tmp/lumpy_input:/data/output_data \
+#  --user $(id -u):$(id -g) \
+#  --rm \
+#  srp33/somatic_wgs:latest \
+#  sort_bam \
+#    -b 101025.split.bam \
+#    -o 101025.split.bam \
+#    -t 12
+
+#docker run \
+#  -v /tmp/lumpy_input:/data/bam_files \
+#  -v /tmp/lumpy:/data/output_data \
+#  --user $(id -u):$(id -g) \
+#  --rm \
+#  srp33/somatic_wgs:latest \
+#  call_structural_variants_lumpy \
+#    -b 101025.bam \
+#    -d 101025.discordant.bam \
+#    -s 101025.split.bam \
+#    -o 101025.vcf
+
+#mkdir -p /tmp/manta/101025
+#
+#docker run \
+#  -v /tmp/bqsr_corrected:/data/bam_files \
+#  -v $d/ref_genome:/data/ref_genome \
+#  -v $d/ref_index:/data/ref_index \
+#  -v /tmp/manta:/data/output_data \
+#  --user $(id -u):$(id -g) \
+#  --rm \
+#  srp33/somatic_wgs:latest \
+#  call_structural_variants_manta \
+#    -n 101024.bam \
+#    -t 101025.bam \
+#    -r ucsc.hg19.fasta.gz \
+#    -d 101025
+
+docker run \
+  -v /tmp/manta/101025/results/variants:/data/input_data \
+  -v /tmp/bqsr_corrected:/data/bam_files \
+  -v $d/ref_genome:/data/ref_genome \
+  -v $d/ref_index:/data/ref_index \
+  -v /tmp/strelka:/data/output_data \
+  --user $(id -u):$(id -g) \
+  --rm \
+  srp33/somatic_wgs:latest \
+  call_somatic_variants_strelka \
+    -n 101024.bam \
+    -t 101025.bam \
+    -r ucsc.hg19.fasta.gz \
+    -d /tmp/strelka \
+    -i candidateSmallIndels.vcf.gz \
+    --overwrite_runDir
+
+#docker run \
+#  -v /tmp/bqsr_corrected:/data/bam_files \
+#  -v $d/ref_genome:/data/ref_genome \
+#  -v $d/ref_index:/data/ref_index \
+#  -v /tmp/delly:/data/output_data \
+#  --user $(id -u):$(id -g) \
+#  --rm \
+#  srp33/somatic_wgs:latest \
+#  call_structural_variants_delly \
+#    -b 101025.bam \
+#    -r ucsc.hg19.fasta.gz \
+#    -o 101025.vcf

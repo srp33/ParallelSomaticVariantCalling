@@ -1,0 +1,3 @@
+#! /bin/bash
+
+docker pull srp33/somatic_wgs:version2

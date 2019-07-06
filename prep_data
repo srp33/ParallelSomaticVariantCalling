@@ -1,56 +1,87 @@
 #! /bin/bash
 
-#####################################################
-# TODO: Simplify the REF directory so that it only includes
-#       the files you need. Download them from the web
-#       after you get it working with the current files?
-#       Remove files from bonsai.
-#####################################################
+tag=version2
 
-d=/Applications/U54
+#########################################################
+# Download reference genome and build reference indices
+#########################################################
 
-#docker run \
-#  --rm \
-#  -i -t \
-#  srp33/somatic_wgs:latest \
-#  /bin/bash
+if [ ! -f REF/index/hg38.fa.dict ]
+then
+  rm -rf REF/*
+  mkdir -p REF/genome
+  mkdir -p REF/index
 
-docker run --rm srp33/somatic_wgs:latest
+  ref_genome_version=hg38
+  ref_genome_url=http://hgdownload.cse.ucsc.edu/goldenPath/${ref_genome_version}/bigZips/${ref_genome_version}.fa.gz
+  ref_genome_name=$(basename $ref_genome_url)
+  wget -O REF/genome/$ref_genome_name $ref_genome_url
+
+  docker run \
+    -v $(pwd)/REF/genome:/data/ref_genome \
+    -v $(pwd)/REF/index:/data/output_data \
+    --user $(id -u):$(id -g) \
+    --rm \
+    srp33/somatic_wgs:$tag \
+      index_fasta \
+        -r $ref_genome_name \
+        --log log.txt
+fi
+
+#########################################################
+# Re-compress FASTQ files
+#   (these files came from the Texas Cancer Research Biobank)
+#########################################################
+
+for f in FASTQ/*.fastq.bz2
+do
+  if [ -f $f ]
+  then
+    echo $f
+    bunzip2 $f
+  fi
+done
+
+for f in FASTQ/*.fastq
+do
+  if [ -f $f ]
+  then
+    echo $f
+    gzip $f
+  fi
+done
 exit
-#docker run --rm srp33/somatic_wgs:latest bwa_mem_align -h
-#docker run --rm srp33/somatic_wgs:latest sort_bam -h
-#docker run --rm srp33/somatic_wgs:latest index_bam -h
-#docker run --rm srp33/somatic_wgs:latest mark_duplicates -h
-#docker run --rm srp33/somatic_wgs:latest slice_bam -h
-#docker run --rm srp33/somatic_wgs:latest merge_bams -h
-#docker run --rm srp33/somatic_wgs:latest add_read_groups -h
 
-#docker run \
-#  -v $d/ref_genome:/data/ref_genome \
-#  -v $d/ref_index:/data/ref_index \
-#  -v $d/SampleData:/data/input_data \
-#  -v /tmp:/data/output_data \
-#  --user $(id -u):$(id -g) \
-#  --rm \
-#  srp33/somatic_wgs:latest \
-#  bwa_mem_align \
-#    -r ucsc.hg19.fasta.gz \
-#    -s1 101024.1.fastq.gz \
-#    -s2 101024.2.fastq.gz \
-#    -o test.bam \
-#    --log test.log \
-#    -t 25
+#########################################################
+# Align using BWA
+#########################################################
+
+docker run \
+  -v $(pwd)/REF/genome:/data/ref_genome \
+  -v $(pwd)/REF/index:/data/ref_index \
+  -v $(pwd)/SampleData:/data/input_data \
+  -v /tmp:/data/output_data \
+  --user $(id -u):$(id -g) \
+  --rm \
+  srp33/somatic_wgs:$tag \
+  bwa_mem_align \
+    -r ucsc.hg19.fasta.gz \
+    -s1 101024.1.fastq.gz \
+    -s2 101024.2.fastq.gz \
+    -o test.bam \
+    --log test.log \
+    -t 25
 
 # Trying it with a file and dir name that has spaces
 #mkdir -p "/tmp/test dir"
 #docker run \
-#  -v $d/ref_genome:/data/ref_genome \
-#  -v $d/ref_index:/data/ref_index \
-#  -v $d/SampleData:/data/input_data \
+#  -v $(pwd)/REF/genome:/data/ref_genome \
+#  -v $(pwd)/ref_index:/data/ref_index \
+#  -v $(pwd)/SampleData:/data/input_data \
 #  -v "/tmp/test dir":/data/output_data \
 #  --user $(id -u):$(id -g) \
 #  --rm \
-#  srp33/somatic_wgs:latest \
+#  srp33/somatic_wgs:$tag \
 #  bwa_mem_align \
 #    -r ucsc.hg19.fasta.gz \
 #    -s1 101024.1.fastq.gz \
@@ -67,7 +98,7 @@ exit
 #  -v /tmp/sorted:/data/output_data \
 #  --user $(id -u):$(id -g) \
 #  --rm \
-#  srp33/somatic_wgs:latest \
+#  srp33/somatic_wgs:$tag \
 #  sort_bam \
 #    -b test.bam \
 #    -o test.bam \
@@ -78,7 +109,7 @@ exit
 #  -v /tmp/sorted:/data/bam_files \
 #  --user $(id -u):$(id -g) \
 #  --rm \
-#  srp33/somatic_wgs:latest \
+#  srp33/somatic_wgs:$tag \
 #  index_bam \
 #    -b test.bam \
 #    -t 5
@@ -91,7 +122,7 @@ exit
 #  -v /tmp/marked:/data/output_data \
 #  --user $(id -u):$(id -g) \
 #  --rm \
-#  srp33/somatic_wgs:latest \
+#  srp33/somatic_wgs:$tag \
 #  mark_duplicates \
 #    -b test.bam \
 #    -o test.bam \
@@ -106,7 +137,7 @@ exit
 #  -v /tmp/sliced:/data/output_data \
 #  --user $(id -u):$(id -g) \
 #  --rm \
-#  srp33/somatic_wgs:latest \
+#  srp33/somatic_wgs:$tag \
 #  slice_bam \
 #    -b test.bam \
 #    -r chr1 \
@@ -119,7 +150,7 @@ exit
 #  -v /tmp/sliced:/data/output_data \
 #  --user $(id -u):$(id -g) \
 #  --rm \
-#  srp33/somatic_wgs:latest \
+#  srp33/somatic_wgs:$tag \
 #  slice_bam \
 #    -b test.bam \
 #    -r chr2:1000-1000000 \
@@ -135,7 +166,7 @@ exit
 #  -v /tmp/merged:/data/output_data \
 #  --user $(id -u):$(id -g) \
 #  --rm \
-#  srp33/somatic_wgs:latest \
+#  srp33/somatic_wgs:$tag \
 #  merge_bams \
 #    -b test.chr1.bam \
 #    -b test.chr2.bam \
@@ -151,7 +182,7 @@ exit
 #  -v /tmp/read_groups:/data/output_data \
 #  --user $(id -u):$(id -g) \
 #  --rm \
-#  srp33/somatic_wgs:latest \
+#  srp33/somatic_wgs:$tag \
 #  add_read_groups \
 #    -b test.bam \
 #    -o test.bam \

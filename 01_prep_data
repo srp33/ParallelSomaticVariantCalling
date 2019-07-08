@@ -1,0 +1,90 @@
+#! /bin/bash
+
+source variables
+
+#########################################################
+# Download reference genome and build reference indices
+#########################################################
+
+if [ ! -f REF/index/${ref_genome_version}.fa.dict ]
+then
+  rm -rf REF/*
+  mkdir -p REF/genome
+  mkdir -p REF/index
+
+  ref_genome_url=http://hgdownload.cse.ucsc.edu/goldenPath/${ref_genome_version}/bigZips/${ref_genome_version}.fa.gz
+  ref_genome_name=$(basename $ref_genome_url)
+  wget -O REF/genome/$ref_genome_name $ref_genome_url
+
+  docker run \
+    -v $(pwd)/REF/genome:/data/ref_genome \
+    -v $(pwd)/REF/index:/data/output_data \
+    --user $(id -u):$(id -g) \
+    --rm \
+    srp33/somatic_wgs:$tag \
+      index_fasta \
+        -r $ref_genome_name \
+        --log log.txt
+fi
+
+#########################################################
+# Re-compress FASTQ files
+#   (these files came from the Texas Cancer Research Biobank)
+#########################################################
+
+for f in FASTQ/*.fastq.bz2
+do
+  if [ -f $f ]
+  then
+    echo $f
+    bunzip2 $f
+  fi
+done
+
+for f in FASTQ/*.fastq
+do
+  if [ -f $f ]
+  then
+    echo $f
+    gzip $f
+  fi
+done
+
+#########################################################
+# Check whether we need to trim the reads
+#########################################################
+
+mkdir -p FASTQ_Diagnostics
+
+for f in FASTQ/*read1.fastq.gz
+do
+  adapterOutputFile=FASTQ_Diagnostics/$(basename ${f/\.read1\.fastq\.gz}).adapters
+
+  if [ ! -f $adapterOutputFile ]
+  then
+    docker run \
+      -v $(pwd)/FASTQ:/data/input_data \
+      --user $(id -u):$(id -g) \
+      --rm \
+      srp33/somatic_wgs:$tag \
+      detect_adapters \
+        -i1 $(basename $f) \
+        -i2 $(basename ${f/read1/read2}) \
+        --log test.log > $adapterOutputFile
+  fi
+
+  errorOutputFile=FASTQ_Diagnostics/$(basename ${f/\.read1\.fastq\.gz}).error_rate
+
+  if [ ! -f $errorOutputFile ]
+  then
+    docker run \
+      -v $(pwd)/FASTQ:/data/input_data \
+      --user $(id -u):$(id -g) \
+      --rm \
+      srp33/somatic_wgs:$tag \
+      estimate_error_rate \
+        -i1 $(basename $f) \
+        -i2 $(basename ${f/read1/read2}) \
+        --log test.log > $errorOutputFile
+  fi
+done

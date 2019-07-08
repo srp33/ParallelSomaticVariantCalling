@@ -1,0 +1,4 @@
+#! /bin/bash
+
+ref_genome_version=hg38
+tag=version2

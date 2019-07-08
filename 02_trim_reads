@@ -1,0 +1,37 @@
+#! /bin/bash
+
+source variables
+
+mkdir -p FASTQ_Trimmed
+
+function trim {
+  f="$1"
+  args="$2"
+
+  reportFile=FASTQ_Diagnostics/${f/\.read1\.fastq\.gz}.trim
+
+  if [ ! -f $reportFile ]
+  then
+    docker run \
+      -v $(pwd)/FASTQ:/data/input_data \
+      -v $(pwd)/FASTQ_Trimmed:/data/output_data \
+      --user $(id -u):$(id -g) \
+      --rm \
+      srp33/somatic_wgs:$tag \
+      trim_fastq \
+        -i1 $f \
+        -i2 ${f/read1/read2} \
+        -o1 $f \
+        -o2 ${f/read1/read2} \
+        --args " -q 20 -Q 20 --minimum-length 40 -T 18 $args" > $reportFile
+  fi
+}
+
+##trim TCRBOA7-N-WEX.read1.fastq.gz "-e 0.2"
+#trim TCRBOA7-T-WEX.read1.fastq.gz "-e 0.2"
+#trim TCRBOA7-N-WGS.lane1.read1.fastq.gz "-e 0.3"
+#trim TCRBOA7-N-WGS.lane2.read1.fastq.gz "-e 0.2"
+#trim TCRBOA7-T-WGS.lane1.read1.fastq.gz "-e 0.1"
+#trim TCRBOA7-T-WGS.lane2.read1.fastq.gz "-e 0.6"
+trim TCRBOA7-T-WGS.lane3.read1.fastq.gz "-e 1.0"
+#trim TCRBOA7-T-WGS.lane4.read1.fastq.gz "-e 0.3"

@@ -1,0 +1,36 @@
+#! /bin/bash
+
+source variables
+
+mkdir -p BAM
+
+function align {
+  sample_prefix="$1"  
+
+  if [ ! -f BAM/${sample_prefix}.bam ]
+  then
+    docker run \
+      -v $(pwd)/REF/genome:/data/ref_genome \
+      -v $(pwd)/REF/index:/data/ref_index \
+      -v $(pwd)/FASTQ_Trimmed:/data/input_data \
+      -v $(pwd)/BAM:/data/output_data \
+      --user $(id -u):$(id -g) \
+      --rm \
+      srp33/somatic_wgs:${tag} \
+      bwa_mem_align \
+        -r $ref_genome_version.fa \
+        -s1 ${sample_prefix}.read1.fastq.gz \
+        -s2 ${sample_prefix}.read2.fastq.gz \
+        -o ${sample_prefix}.bam \
+        -t $num_threads
+  fi
+}
+
+align TCRBOA7-N-WEX
+align TCRBOA7-T-WEX
+align TCRBOA7-N-WGS.lane1
+align TCRBOA7-N-WGS.lane2
+align TCRBOA7-T-WGS.lane1
+align TCRBOA7-T-WGS.lane2
+align TCRBOA7-T-WGS.lane3
+align TCRBOA7-T-WGS.lane4

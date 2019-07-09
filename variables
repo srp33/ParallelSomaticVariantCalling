@@ -2,3 +2,4 @@
 
 ref_genome_version=hg38
 tag=version2
+num_threads=18

@@ -3,17 +3,17 @@
 d=/Applications/U54
 currentDir=$(pwd)
 
-#docker run --rm srp33/somatic_wgs:latest
-#docker run --rm srp33/somatic_wgs:latest base_recalibrator -h
-#docker run --rm srp33/somatic_wgs:latest apply_bqsr -h
-#docker run --rm srp33/somatic_wgs:latest call_somatic_variants_gatk4 -h
-#docker run --rm srp33/somatic_wgs:latest sort_bam -h
-#docker run --rm srp33/somatic_wgs:latest samblast -h
-docker run --rm srp33/somatic_wgs:latest call_structural_variants_lumpy -h
+#docker run --rm srp33/somatic_wgs:$tag
+#docker run --rm srp33/somatic_wgs:$tag base_recalibrator -h
+#docker run --rm srp33/somatic_wgs:$tag apply_bqsr -h
+#docker run --rm srp33/somatic_wgs:$tag call_somatic_variants_gatk4 -h
+#docker run --rm srp33/somatic_wgs:$tag sort_bam -h
+#docker run --rm srp33/somatic_wgs:$tag samblast -h
+docker run --rm srp33/somatic_wgs:$tag call_structural_variants_lumpy -h
 exit
-#docker run --rm srp33/somatic_wgs:latest call_structural_variants_manta -h
-#docker run --rm srp33/somatic_wgs:latest call_somatic_variants_strelka -h
-#docker run --rm srp33/somatic_wgs:latest call_structural_variants_delly -h
+#docker run --rm srp33/somatic_wgs:$tag call_structural_variants_manta -h
+#docker run --rm srp33/somatic_wgs:$tag call_somatic_variants_strelka -h
+#docker run --rm srp33/somatic_wgs:$tag call_structural_variants_delly -h
 #exit
 
 #sudo rm -rf /tmp/bwa /tmp/sorted /tmp/marked /tmp/read_groups /tmp/bqsr /tmp/bqsr_corrected /tmp/gatk4 /tmp/samblast_input /tmp/samblast /tmp/lumpy /tmp/lumpy_input /tmp/manta /tmp/strelka /tmp/delly
@@ -29,7 +29,7 @@ function prep_sample {
     -v /tmp/bwa:/data/output_data \
     --user $(id -u):$(id -g) \
     --rm \
-    srp33/somatic_wgs:latest \
+    srp33/somatic_wgs:$tag \
     bwa_mem_align \
       -r ucsc.hg19.fasta.gz \
       -s1 $sampleID.1.fastq.gz \
@@ -42,7 +42,7 @@ function prep_sample {
     -v /tmp/sorted:/data/output_data \
     --user $(id -u):$(id -g) \
     --rm \
-    srp33/somatic_wgs:latest \
+    srp33/somatic_wgs:$tag \
     sort_bam \
       -b $sampleID.bam \
       -o $sampleID.bam \
@@ -52,7 +52,7 @@ function prep_sample {
     -v /tmp/sorted:/data/bam_files \
     --user $(id -u):$(id -g) \
     --rm \
-    srp33/somatic_wgs:latest \
+    srp33/somatic_wgs:$tag \
     index_bam \
       -b $sampleID.bam \
       -t 25
@@ -62,7 +62,7 @@ function prep_sample {
     -v /tmp/marked:/data/output_data \
     --user $(id -u):$(id -g) \
     --rm \
-    srp33/somatic_wgs:latest \
+    srp33/somatic_wgs:$tag \
     mark_duplicates \
       -b $sampleID.bam \
       -o $sampleID.bam \
@@ -73,7 +73,7 @@ function prep_sample {
     -v /tmp/read_groups:/data/output_data \
     --user $(id -u):$(id -g) \
     --rm \
-    srp33/somatic_wgs:latest \
+    srp33/somatic_wgs:$tag \
     add_read_groups \
       -b $sampleID.bam \
       -o $sampleID.bam \
@@ -85,7 +85,7 @@ function prep_sample {
     -v /tmp/read_groups:/data/bam_files \
     --user $(id -u):$(id -g) \
     --rm \
-    srp33/somatic_wgs:latest \
+    srp33/somatic_wgs:$tag \
     index_bam \
       -b $sampleID.bam \
       -t 25
@@ -98,7 +98,7 @@ function prep_sample {
     -v /tmp/bqsr:/data/output_data \
     --user $(id -u):$(id -g) \
     --rm \
-    srp33/somatic_wgs:latest \
+    srp33/somatic_wgs:$tag \
     base_recalibrator \
       -b $sampleID.bam \
       -r ucsc.hg19.fasta.gz \
@@ -112,7 +112,7 @@ function prep_sample {
     -v /tmp/bqsr_corrected:/data/output_data \
     --user $(id -u):$(id -g) \
     --rm \
-    srp33/somatic_wgs:latest \
+    srp33/somatic_wgs:$tag \
     apply_bqsr \
       -b $sampleID.bam \
       -bqsr $sampleID.recal \
@@ -122,7 +122,7 @@ function prep_sample {
     -v /tmp/bqsr_corrected:/data/bam_files \
     --user $(id -u):$(id -g) \
     --rm \
-    srp33/somatic_wgs:latest \
+    srp33/somatic_wgs:$tag \
     index_bam \
       -b $sampleID.bam \
       -t 25
@@ -149,7 +149,7 @@ function prep_sample {
 #  -v /tmp/gatk4:/data/output_data \
 #  --user $(id -u):$(id -g) \
 #  --rm \
-#  srp33/somatic_wgs:latest \
+#  srp33/somatic_wgs:$tag \
 #  call_somatic_variants_gatk4 \
 #    -n 101024.bam \
 #    -ns 101024 \
@@ -164,7 +164,7 @@ function prep_sample {
 #  -v /tmp/samblast_input:/data/output_data \
 #  --user $(id -u):$(id -g) \
 #  --rm \
-#  srp33/somatic_wgs:latest \
+#  srp33/somatic_wgs:$tag \
 #  sort_bam \
 #    -b 101025.bam \
 #    -o 101025.bam \
@@ -176,7 +176,7 @@ function prep_sample {
 #  -v /tmp/samblast:/data/output_data \
 #  --user $(id -u):$(id -g) \
 #  --rm \
-#  srp33/somatic_wgs:latest \
+#  srp33/somatic_wgs:$tag \
 #  samblast \
 #    -b 101025.bam \
 #    -d 101025.discordant.bam \
@@ -189,7 +189,7 @@ function prep_sample {
 #  -v /tmp/lumpy_input:/data/output_data \
 #  --user $(id -u):$(id -g) \
 #  --rm \
-#  srp33/somatic_wgs:latest \
+#  srp33/somatic_wgs:$tag \
 #  sort_bam \
 #    -b 101025.discordant.bam \
 #    -o 101025.discordant.bam \
@@ -200,7 +200,7 @@ function prep_sample {
 #  -v /tmp/lumpy_input:/data/output_data \
 #  --user $(id -u):$(id -g) \
 #  --rm \
-#  srp33/somatic_wgs:latest \
+#  srp33/somatic_wgs:$tag \
 #  sort_bam \
 #    -b 101025.split.bam \
 #    -o 101025.split.bam \
@@ -211,7 +211,7 @@ function prep_sample {
 #  -v /tmp/lumpy:/data/output_data \
 #  --user $(id -u):$(id -g) \
 #  --rm \
-#  srp33/somatic_wgs:latest \
+#  srp33/somatic_wgs:$tag \
 #  call_structural_variants_lumpy \
 #    -b 101025.bam \
 #    -d 101025.discordant.bam \
@@ -227,7 +227,7 @@ function prep_sample {
 #  -v /tmp/manta:/data/output_data \
 #  --user $(id -u):$(id -g) \
 #  --rm \
-#  srp33/somatic_wgs:latest \
+#  srp33/somatic_wgs:$tag \
 #  call_structural_variants_manta \
 #    -n 101024.bam \
 #    -t 101025.bam \
@@ -242,7 +242,7 @@ docker run \
   -v /tmp/strelka:/data/output_data \
   --user $(id -u):$(id -g) \
   --rm \
-  srp33/somatic_wgs:latest \
+  srp33/somatic_wgs:$tag \
   call_somatic_variants_strelka \
     -n 101024.bam \
     -t 101025.bam \
@@ -258,7 +258,7 @@ docker run \
 #  -v /tmp/delly:/data/output_data \
 #  --user $(id -u):$(id -g) \
 #  --rm \
-#  srp33/somatic_wgs:latest \
+#  srp33/somatic_wgs:$tag \
 #  call_structural_variants_delly \
 #    -b 101025.bam \
 #    -r ucsc.hg19.fasta.gz \

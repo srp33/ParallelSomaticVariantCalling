@@ -14,7 +14,7 @@ function prep {
       -v $(pwd)/Temp/1:/data/output_data \
       --user $(id -u):$(id -g) \
       --rm \
-      srp33/somatic_wgs:latest \
+      srp33/somatic_wgs:$tag \
       sort_bam \
         -b $sample_prefix.bam \
         -o $sample_prefix.bam \
@@ -24,7 +24,7 @@ function prep {
       -v $(pwd)/Temp/1:/data/bam_files \
       --user $(id -u):$(id -g) \
       --rm \
-      srp33/somatic_wgs:latest \
+      srp33/somatic_wgs:$tag \
       index_bam \
         -b $sample_prefix.bam \
         -t $num_threads
@@ -34,7 +34,7 @@ function prep {
       -v $(pwd)/Temp/2:/data/output_data \
       --user $(id -u):$(id -g) \
       --rm \
-      srp33/somatic_wgs:latest \
+      srp33/somatic_wgs:$tag \
       mark_duplicates \
         -b $sample_prefix.bam \
         -o $sample_prefix.bam \
@@ -45,7 +45,7 @@ function prep {
       -v $(pwd)/Temp/1:/data/output_data \
       --user $(id -u):$(id -g) \
       --rm \
-      srp33/somatic_wgs:latest \
+      srp33/somatic_wgs:$tag \
       add_read_groups \
         -b $sample_prefix.bam \
         -o $sample_prefix.bam \
@@ -57,7 +57,7 @@ function prep {
       -v $(pwd)/Temp/1:/data/bam_files \
       --user $(id -u):$(id -g) \
       --rm \
-      srp33/somatic_wgs:latest \
+      srp33/somatic_wgs:$tag \
       index_bam \
         -b $sample_prefix.bam \
         -t $num_threads

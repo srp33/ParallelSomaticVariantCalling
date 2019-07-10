@@ -32,7 +32,7 @@ function align {
       -v $(pwd)/BAM:/data/bam_files \
       --user $(id -u):$(id -g) \
       --rm \
-      srp33/somatic_wgs:latest \
+      srp33/somatic_wgs:$tag \
       index_bam \
         -b $sample_prefix.bam \
         -t $num_threads

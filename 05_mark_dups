@@ -13,7 +13,7 @@ function mark {
     -v $(pwd)/Temp:/data/output_data \
     --user $(id -u):$(id -g) \
     --rm \
-    srp33/somatic_wgs:latest \
+    srp33/somatic_wgs:$tag \
     mark_duplicates \
       -b "$bam_file" \
       -o "$bam_file" \

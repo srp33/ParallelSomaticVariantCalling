@@ -1,5 +1,5 @@
 #! /bin/bash
 
 ref_genome_version=hg38
-tag=version2
+tag=version$(cat VERSION)
 num_threads=36

@@ -14,7 +14,7 @@ function merge {
     -v $(pwd)/Temp:/data/output_data \
     --user $(id -u):$(id -g) \
     --rm \
-    srp33/somatic_wgs:latest \
+    srp33/somatic_wgs:$tag \
     merge_bams \
       $bam_arg \
       -o "$out_name" \

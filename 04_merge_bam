@@ -1,0 +1,32 @@
+#! /bin/bash
+
+source variables
+
+mkdir -p Temp
+rm -rf Temp/*
+
+function merge {
+  bam_arg="$1"  
+  out_name="$2"
+
+  docker run \
+    -v $(pwd)/BAM:/data/bam_files \
+    -v $(pwd)/Temp:/data/output_data \
+    --user $(id -u):$(id -g) \
+    --rm \
+    srp33/somatic_wgs:latest \
+    merge_bams \
+      $bam_arg \
+      -o "$out_name" \
+      -t $num_threads
+}
+
+merge "-b TCRBOA7-N-WGS.lane1.bam -b TCRBOA7-N-WGS.lane2.bam" TCRBOA7-N-WGS.bam
+rm BAM/TCRBOA7-N-WGS.*.bam*
+mv Temp/TCRBOA7-N-WGS.bam* BAM/
+
+merge "-b TCRBOA7-T-WGS.lane1.bam -b TCRBOA7-T-WGS.lane2.bam -b TCRBOA7-T-WGS.lane3.bam -b TCRBOA7-T-WGS.lane4.bam" TCRBOA7-T-WGS.bam
+rm BAM/TCRBOA7-T-WGS.*.bam*
+mv Temp/TCRBOA7-T-WGS.bam* BAM/
+
+rmdir Temp

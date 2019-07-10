@@ -1,0 +1,22 @@
+#! /bin/bash
+
+source variables
+
+#zcat FASTQ_Trimmed/TCRBOA7-N-WEX.read1.fastq.gz | wc -l
+##223,319,116
+
+#zcat FASTQ_Trimmed/TCRBOA7-N-WGS.lane1.read1.fastq.gz | wc -l
+##846,453,816
+
+mkdir -p FASTQ_Trimmed_Test
+rm -f FASTQ_Trimmed_Test/*
+
+for f in FASTQ_Trimmed/*.fastq.gz
+do
+  echo $f
+  zcat $f | head -n 40000000 | gzip > FASTQ_Trimmed_Test/$(basename $f)
+done
+
+rm -rf FASTQ_Trimmed_Full
+mv FASTQ_Trimmed FASTQ_Trimmed_Full
+mv FASTQ_Trimmed_Test FASTQ_Trimmed

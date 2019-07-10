@@ -1,0 +1,32 @@
+#! /bin/bash
+
+source variables
+
+mkdir -p Temp
+rm -rf Temp/*
+
+function mark {
+  bam_file="$1"
+
+  docker run \
+    -v $(pwd)/BAM:/data/bam_files \
+    -v $(pwd)/Temp:/data/output_data \
+    --user $(id -u):$(id -g) \
+    --rm \
+    srp33/somatic_wgs:latest \
+    mark_duplicates \
+      -b "$bam_file" \
+      -o "$bam_file" \
+      -t $num_threads
+}
+
+for f in BAM/*.bam
+do
+  mark $(basename $f)
+break
+done
+
+#mv Temp/*.bam BAM/
+# Index?
+
+#rmdir Temp

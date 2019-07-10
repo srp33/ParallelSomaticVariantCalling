@@ -1,0 +1,11 @@
+#! /bin/bash
+
+## These steps are preparatory and are not part of the benchmarks
+#./01_*
+#./02_*
+
+## We will try different options with these steps, so we will time them.
+mkdir -p Time
+
+#{ time ./03_* 1 2> /dev/null ; } 2> Time/$(ls 03_*)
+{ time ./04_* 1 2> /dev/null ; } 2> Time/$(ls 04_*)

@@ -1,0 +1,74 @@
+#! /bin/bash
+
+source variables
+
+mkdir -p BAM2 Temp/1 Temp/2
+
+function prep {
+  sample_prefix="$1"  
+
+  if [ ! -f BAM2/${sample_prefix}.bam ]
+  then
+    docker run \
+      -v $(pwd)/BAM:/data/bam_files \
+      -v $(pwd)/Temp/1:/data/output_data \
+      --user $(id -u):$(id -g) \
+      --rm \
+      srp33/somatic_wgs:latest \
+      sort_bam \
+        -b $sample_prefix.bam \
+        -o $sample_prefix.bam \
+        -t $num_threads
+
+    docker run \
+      -v $(pwd)/Temp/1:/data/bam_files \
+      --user $(id -u):$(id -g) \
+      --rm \
+      srp33/somatic_wgs:latest \
+      index_bam \
+        -b $sample_prefix.bam \
+        -t $num_threads
+
+    docker run \
+      -v $(pwd)/Temp/1:/data/bam_files \
+      -v $(pwd)/Temp/2:/data/output_data \
+      --user $(id -u):$(id -g) \
+      --rm \
+      srp33/somatic_wgs:latest \
+      mark_duplicates \
+        -b $sample_prefix.bam \
+        -o $sample_prefix.bam \
+        -t $num_threads
+
+    docker run \
+      -v $(pwd)/Temp/2:/data/bam_files \
+      -v $(pwd)/Temp/1:/data/output_data \
+      --user $(id -u):$(id -g) \
+      --rm \
+      srp33/somatic_wgs:latest \
+      add_read_groups \
+        -b $sample_prefix.bam \
+        -o $sample_prefix.bam \
+        -id $sample_prefix \
+        -lb $sample_prefix \
+        -s $sample_prefix
+
+    docker run \
+      -v $(pwd)/Temp/1:/data/bam_files \
+      --user $(id -u):$(id -g) \
+      --rm \
+      srp33/somatic_wgs:latest \
+      index_bam \
+        -b $sample_prefix.bam \
+        -t $num_threads
+  fi
+}
+
+prep TCRBOA7-N-WEX
+prep TCRBOA7-T-WEX
+prep TCRBOA7-N-WGS.lane1
+prep TCRBOA7-N-WGS.lane2
+prep TCRBOA7-T-WGS.lane1
+prep TCRBOA7-T-WGS.lane2
+prep TCRBOA7-T-WGS.lane3
+prep TCRBOA7-T-WGS.lane4

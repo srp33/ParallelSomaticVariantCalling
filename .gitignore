@@ -1,6 +1,9 @@
-BAM
+BAM*
 FASTQ*
 Logs
 REF
 VCF
 nohup*
+somatic_wgs
+Time
+Temp

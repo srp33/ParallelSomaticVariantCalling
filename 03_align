@@ -6,9 +6,11 @@ mkdir -p BAM
 
 function align {
   sample_prefix="$1"  
+  sample_id="$2"
 
   if [ ! -f BAM/${sample_prefix}.bam ]
   then
+    # I ran some simple tests and confirmed that this approach was faster than sorting as a separate step.
     docker run \
       -v $(pwd)/REF/genome:/data/ref_genome \
       -v $(pwd)/REF/index:/data/ref_index \
@@ -21,16 +23,27 @@ function align {
         -r $ref_genome_version.fa \
         -s1 ${sample_prefix}.read1.fastq.gz \
         -s2 ${sample_prefix}.read2.fastq.gz \
+        -rg "@RG\tID:${sample_prefix}\tPL:ILLUMINA\tPU:${sample_prefix}\tLB:${sample_prefix}\tSM:${sample_id}" \
+        --sort true \
         -o ${sample_prefix}.bam \
+        -t $num_threads
+
+    docker run \
+      -v $(pwd)/BAM:/data/bam_files \
+      --user $(id -u):$(id -g) \
+      --rm \
+      srp33/somatic_wgs:latest \
+      index_bam \
+        -b $sample_prefix.bam \
         -t $num_threads
   fi
 }
 
-align TCRBOA7-N-WEX
-align TCRBOA7-T-WEX
-align TCRBOA7-N-WGS.lane1
-align TCRBOA7-N-WGS.lane2
-align TCRBOA7-T-WGS.lane1
-align TCRBOA7-T-WGS.lane2
-align TCRBOA7-T-WGS.lane3
-align TCRBOA7-T-WGS.lane4
+align TCRBOA7-N-WEX TCRBOA7-N-WEX
+align TCRBOA7-T-WEX TCRBOA7-T-WEX
+align TCRBOA7-N-WGS.lane1 TCRBOA7-N-WGS
+align TCRBOA7-N-WGS.lane2 TCRBOA7-N-WGS
+align TCRBOA7-T-WGS.lane1 TCRBOA7-T-WGS
+align TCRBOA7-T-WGS.lane2 TCRBOA7-T-WGS
+align TCRBOA7-T-WGS.lane3 TCRBOA7-T-WGS
+align TCRBOA7-T-WGS.lane4 TCRBOA7-T-WGS

@@ -1,9 +1,8 @@
 #! /bin/bash
 
-source variables
+set -o errexit
 
-mkdir -p Temp
-rm -rf Temp/*
+source variables
 
 function mark {
   bam_file="$1"
@@ -20,13 +19,13 @@ function mark {
       -t $num_threads
 }
 
+mkdir -p Temp
+rm -rf Temp/*
+
 for f in BAM/*.bam
 do
   mark $(basename $f)
-break
 done
 
-#mv Temp/*.bam BAM/
-# Index?
-
-#rmdir Temp
+mv Temp/*.bam* BAM/
+rmdir Temp

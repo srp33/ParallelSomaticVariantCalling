@@ -1,74 +1,59 @@
 #! /bin/bash
 
+set -o errexit
+
 source variables
 
-mkdir -p BAM2 Temp/1 Temp/2
+function recal {
+  bam_file="$1"
 
-function prep {
-  sample_prefix="$1"  
+  docker run \
+    -v $(pwd)/BAM:/data/bam_files \
+    -v $(pwd)/REF/genome:/data/ref_genome \
+    -v $(pwd)/REF/index:/data/ref_index \
+    -v $(pwd)/REF/recal:/data/vcf_files \
+    -v $(pwd)/Temp:/data/output_data \
+    --user $(id -u):$(id -g) \
+    --rm \
+    srp33/somatic_wgs:$tag \
+    base_recalibrator \
+      -b $bam_file \
+      -r $ref_genome_version.fa \
+      -s dbsnp_146.hg38.vcf \
+      -s 1000G_phase1.snps.high_confidence.hg38.vcf \
+      -s Mills_and_1000G_gold_standard.indels.hg38.vcf \
+      -o $bam_file.recal
 
-  if [ ! -f BAM2/${sample_prefix}.bam ]
-  then
-    docker run \
-      -v $(pwd)/BAM:/data/bam_files \
-      -v $(pwd)/Temp/1:/data/output_data \
-      --user $(id -u):$(id -g) \
-      --rm \
-      srp33/somatic_wgs:$tag \
-      sort_bam \
-        -b $sample_prefix.bam \
-        -o $sample_prefix.bam \
-        -t $num_threads
+#  docker run \
+#    -v /tmp/read_groups:/data/bam_files \
+#    -v /tmp/bqsr:/data/input_data \
+#    -v /tmp/bqsr_corrected:/data/output_data \
+#    --user $(id -u):$(id -g) \
+#    --rm \
+#    srp33/somatic_wgs:$tag \
+#    apply_bqsr \
+#      -b $sampleID.bam \
+#      -bqsr $sampleID.recal \
+#      -o $sampleID.bam
 
-    docker run \
-      -v $(pwd)/Temp/1:/data/bam_files \
-      --user $(id -u):$(id -g) \
-      --rm \
-      srp33/somatic_wgs:$tag \
-      index_bam \
-        -b $sample_prefix.bam \
-        -t $num_threads
-
-    docker run \
-      -v $(pwd)/Temp/1:/data/bam_files \
-      -v $(pwd)/Temp/2:/data/output_data \
-      --user $(id -u):$(id -g) \
-      --rm \
-      srp33/somatic_wgs:$tag \
-      mark_duplicates \
-        -b $sample_prefix.bam \
-        -o $sample_prefix.bam \
-        -t $num_threads
-
-    docker run \
-      -v $(pwd)/Temp/2:/data/bam_files \
-      -v $(pwd)/Temp/1:/data/output_data \
-      --user $(id -u):$(id -g) \
-      --rm \
-      srp33/somatic_wgs:$tag \
-      add_read_groups \
-        -b $sample_prefix.bam \
-        -o $sample_prefix.bam \
-        -id $sample_prefix \
-        -lb $sample_prefix \
-        -s $sample_prefix
-
-    docker run \
-      -v $(pwd)/Temp/1:/data/bam_files \
-      --user $(id -u):$(id -g) \
-      --rm \
-      srp33/somatic_wgs:$tag \
-      index_bam \
-        -b $sample_prefix.bam \
-        -t $num_threads
-  fi
+#  docker run \
+#    -v /tmp/bqsr_corrected:/data/bam_files \
+#    --user $(id -u):$(id -g) \
+#    --rm \
+#    srp33/somatic_wgs:$tag \
+#    index_bam \
+#      -b $sampleID.bam \
+#      -t 25
 }
 
-prep TCRBOA7-N-WEX
-prep TCRBOA7-T-WEX
-prep TCRBOA7-N-WGS.lane1
-prep TCRBOA7-N-WGS.lane2
-prep TCRBOA7-T-WGS.lane1
-prep TCRBOA7-T-WGS.lane2
-prep TCRBOA7-T-WGS.lane3
-prep TCRBOA7-T-WGS.lane4
+mkdir -p Temp
+rm -rf Temp/*
+
+for f in BAM/*.bam
+do
+  recal $(basename $f)
+break
+done
+
+#mv Temp/*.bam* BAM/
+#rmdir Temp

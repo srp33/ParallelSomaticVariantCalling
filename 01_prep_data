@@ -1,14 +1,16 @@
 #! /bin/bash
 
+set -o errexit
+
 source variables
 
 #########################################################
 # Download reference genome and build reference indices
 #########################################################
 
-if [ ! -f REF/index/${ref_genome_version}.fa.dict ]
+if [ ! -f REF/index/${ref_genome_version}.dict ]
 then
-  rm -rf REF/*
+  rm -rf REF/genome REF/index
   mkdir -p REF/genome
   mkdir -p REF/index
 
@@ -25,7 +27,33 @@ then
       index_fasta \
         -r $ref_genome_name \
         --log log.txt
+
+  gunzip REF/genome/$ref_genome_name
 fi
+
+#########################################################
+# Prepare files for BAM recalibration
+#########################################################
+
+mkdir -p REF/recal
+
+function download_recal {
+  url="$1"
+
+  dest_file="REF/recal/$(basename $url)"
+
+  if [ ! -f "${dest_file/\.gz/}" ]
+  then
+    wget -O "$dest_file" "$url"
+    gunzip $dest_file
+  fi
+}
+
+# For simplicity (and consistency with https://docs.gdc.cancer.gov/Data/Bioinformatics_Pipelines/DNA_Seq_Variant_Calling_Pipeline/#alignment-workflow),
+#   we will only use dbSNP (v. 146).
+download_recal "ftp://gsapubftp-anonymous@ftp.broadinstitute.org/bundle/hg38/dbsnp_146.hg38.vcf.gz"
+download_recal "ftp://gsapubftp-anonymous@ftp.broadinstitute.org/bundle/hg38/Mills_and_1000G_gold_standard.indels.hg38.vcf.gz"
+download_recal "ftp://gsapubftp-anonymous@ftp.broadinstitute.org/bundle/hg38/1000G_phase1.snps.high_confidence.hg38.vcf.gz"
 
 #########################################################
 # Re-compress FASTQ files

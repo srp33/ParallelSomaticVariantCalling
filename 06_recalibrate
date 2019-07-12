@@ -7,34 +7,47 @@ source variables
 function recal {
   bam_file="$1"
 
+  if [ ! -f "$(pwd)/Temp/$bam_file.recal" ]
+  then
+    docker run \
+      -v $(pwd)/BAM:/data/bam_files \
+      -v $(pwd)/REF/genome:/data/ref_genome \
+      -v $(pwd)/REF/index:/data/ref_index \
+      -v $(pwd)/REF/recal:/data/vcf_files \
+      -v $(pwd)/Temp:/data/output_data \
+      --user $(id -u):$(id -g) \
+      --rm \
+      srp33/somatic_wgs:$tag \
+      base_recalibrator \
+        -b $bam_file \
+        -t $num_threads \
+        -r $ref_genome_version.fa \
+        -s Mills_and_1000G_gold_standard.indels.hg38.vcf \
+        -s dbsnp_146.hg38.vcf \
+        -s 1000G_phase1.snps.high_confidence.hg38.vcf \
+        -o $bam_file.recal
+        ## Adding threads pays off, up to 16, according to https://www.biorxiv.org/content/biorxiv/early/2018/06/18/348565.full.pdf
+  fi
+
   docker run \
-    -v $(pwd)/BAM:/data/bam_files \
     -v $(pwd)/REF/genome:/data/ref_genome \
     -v $(pwd)/REF/index:/data/ref_index \
-    -v $(pwd)/REF/recal:/data/vcf_files \
-    -v $(pwd)/Temp:/data/output_data \
+    -v $(pwd)/BAM:/data/bam_files \
+    -v $(pwd)/Temp:/data/input_data \
+    -v $(pwd)/Temp2:/data/output_data \
     --user $(id -u):$(id -g) \
     --rm \
     srp33/somatic_wgs:$tag \
-    base_recalibrator \
-      -b $bam_file \
+    apply_bqsr \
       -r $ref_genome_version.fa \
-      -s dbsnp_146.hg38.vcf \
-      -s 1000G_phase1.snps.high_confidence.hg38.vcf \
-      -s Mills_and_1000G_gold_standard.indels.hg38.vcf \
-      -o $bam_file.recal
+      -b $bam_file \
+      -bqsr $bam_file.recal \
+      -t 3 \
+      -o $bam_file
+      ## The recommended number of threads is 3 based on https://www.biorxiv.org/content/biorxiv/early/2018/06/18/348565.full.pdf
 
-#  docker run \
-#    -v /tmp/read_groups:/data/bam_files \
-#    -v /tmp/bqsr:/data/input_data \
-#    -v /tmp/bqsr_corrected:/data/output_data \
-#    --user $(id -u):$(id -g) \
-#    --rm \
-#    srp33/somatic_wgs:$tag \
-#    apply_bqsr \
-#      -b $sampleID.bam \
-#      -bqsr $sampleID.recal \
-#      -o $sampleID.bam
+
+#mv Temp2/$bam_file BAM/$bam_file
 
 #  docker run \
 #    -v /tmp/bqsr_corrected:/data/bam_files \
@@ -46,8 +59,8 @@ function recal {
 #      -t 25
 }
 
-mkdir -p Temp
-rm -rf Temp/*
+mkdir -p Temp Temp2
+#rm -rf Temp/* Temp2/*
 
 for f in BAM/*.bam
 do

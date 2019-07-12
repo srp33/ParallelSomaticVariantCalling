@@ -10,8 +10,8 @@ function align {
   sample_prefix="$1"  
   sample_id="$2"
 
-  if [ ! -f BAM/${sample_prefix}.bam ]
-  then
+  for i in $(seq 1 ${num_fastq_chunks})
+  do
     # I ran some simple tests and confirmed that this approach was faster than sorting as a separate step.
     docker run \
       -v $(pwd)/REF/genome:/data/ref_genome \
@@ -29,11 +29,15 @@ function align {
         --sort true \
         --index true \
         -o ${sample_prefix}.bam \
-        -t $num_threads
-  fi
+        -t $num_threads \
+        --nchunks ${num_fastq_chunks} \
+        --process_chunk $i
+break
+  done
 }
 
 align TCRBOA7-N-WEX TCRBOA7-N-WEX
+exit
 align TCRBOA7-T-WEX TCRBOA7-T-WEX
 align TCRBOA7-N-WGS.lane1 TCRBOA7-N-WGS
 align TCRBOA7-N-WGS.lane2 TCRBOA7-N-WGS

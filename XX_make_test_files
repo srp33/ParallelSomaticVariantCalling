@@ -14,7 +14,8 @@ rm -f FASTQ_Trimmed_Test/*
 for f in FASTQ_Trimmed/*.fastq.gz
 do
   echo $f
-  zcat $f | head -n 40000000 | gzip > FASTQ_Trimmed_Test/$(basename $f)
+  zcat $f | head -n 4000000 | gzip > FASTQ_Trimmed_Test/$(basename $f)
+  #zcat $f | head -n 40000000 | gzip > FASTQ_Trimmed_Test/$(basename $f)
 done
 
 rm -rf FASTQ_Trimmed_Full

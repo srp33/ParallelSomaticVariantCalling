@@ -32,12 +32,10 @@ function align {
         -t $num_threads \
         --nchunks ${num_fastq_chunks} \
         --process_chunk $i
-break
   done
 }
 
 align TCRBOA7-N-WEX TCRBOA7-N-WEX
-exit
 align TCRBOA7-T-WEX TCRBOA7-T-WEX
 align TCRBOA7-N-WGS.lane1 TCRBOA7-N-WGS
 align TCRBOA7-N-WGS.lane2 TCRBOA7-N-WGS

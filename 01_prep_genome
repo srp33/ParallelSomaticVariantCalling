@@ -1,0 +1,56 @@
+#! /bin/bash
+
+set -o errexit
+
+source variables
+
+#########################################################
+# Download reference genome and build reference indices
+#########################################################
+
+if [ ! -f REF/index/${ref_genome_version}.dict ]
+then
+  rm -rf REF/genome REF/index
+  mkdir -p REF/genome
+  mkdir -p REF/index
+
+  ref_genome_url=http://hgdownload.cse.ucsc.edu/goldenPath/${ref_genome_version}/bigZips/${ref_genome_version}.fa.gz
+  ref_genome_name=$(basename $ref_genome_url)
+  wget -O REF/genome/$ref_genome_name $ref_genome_url
+
+  docker run \
+    -v $(pwd)/REF/genome:/data/ref_genome \
+    -v $(pwd)/REF/index:/data/output_data \
+    --user $(id -u):$(id -g) \
+    --rm \
+    srp33/somatic_wgs:$tag \
+      index_fasta \
+        -r $ref_genome_name \
+        --log log.txt
+
+  gunzip REF/genome/$ref_genome_name
+fi
+
+#########################################################
+# Prepare files for BAM recalibration
+#########################################################
+
+mkdir -p REF/recal
+
+function download_recal {
+  url="$1"
+
+  docker run \
+    -v $(pwd)/REF/index:/data/ref_index \
+    -v $(pwd)/REF/recal:/data/output_data \
+    --user $(id -u):$(id -g) \
+    --rm \
+    srp33/somatic_wgs:$tag \
+      prep_recal_vcf \
+        -d $ref_genome_version.dict \
+        -u "$url"
+}
+
+#download_recal "ftp://gsapubftp-anonymous@ftp.broadinstitute.org/bundle/hg38/Mills_and_1000G_gold_standard.indels.hg38.vcf.gz"
+#download_recal "ftp://gsapubftp-anonymous@ftp.broadinstitute.org/bundle/hg38/dbsnp_146.hg38.vcf.gz"
+#download_recal "ftp://gsapubftp-anonymous@ftp.broadinstitute.org/bundle/hg38/1000G_phase1.snps.high_confidence.hg38.vcf.gz"

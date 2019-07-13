@@ -1,0 +1,67 @@
+#! /bin/bash
+
+set -o errexit
+
+source variables
+
+#########################################################
+# Re-compress FASTQ files
+#   (these files came from the Texas Cancer Research Biobank)
+#########################################################
+
+for f in FASTQ/*.fastq.bz2
+do
+  if [ -f $f ]
+  then
+    echo $f
+    bunzip2 $f
+  fi
+done
+
+for f in FASTQ/*.fastq
+do
+  if [ -f $f ]
+  then
+    echo $f
+    gzip $f
+  fi
+done
+
+#########################################################
+# Check whether we need to trim the reads
+#########################################################
+
+mkdir -p FASTQ_Diagnostics
+
+for f in FASTQ/*read1.fastq.gz
+do
+  adapterOutputFile=FASTQ_Diagnostics/$(basename ${f/\.read1\.fastq\.gz}).adapters
+
+  if [ ! -f $adapterOutputFile ]
+  then
+    docker run \
+      -v $(pwd)/FASTQ:/data/input_data \
+      --user $(id -u):$(id -g) \
+      --rm \
+      srp33/somatic_wgs:$tag \
+      detect_adapters \
+        -i1 $(basename $f) \
+        -i2 $(basename ${f/read1/read2}) \
+        --log test.log > $adapterOutputFile
+  fi
+
+  errorOutputFile=FASTQ_Diagnostics/$(basename ${f/\.read1\.fastq\.gz}).error_rate
+
+  if [ ! -f $errorOutputFile ]
+  then
+    docker run \
+      -v $(pwd)/FASTQ:/data/input_data \
+      --user $(id -u):$(id -g) \
+      --rm \
+      srp33/somatic_wgs:$tag \
+      estimate_error_rate \
+        -i1 $(basename $f) \
+        -i2 $(basename ${f/read1/read2}) \
+        --log test.log > $errorOutputFile
+  fi
+done

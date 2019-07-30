@@ -7,27 +7,24 @@ source variables
 function recal {
   bam_file="$1"
 
-  if [ ! -f "$(pwd)/Temp/$bam_file.recal" ]
-  then
-    docker run \
-      -v $(pwd)/BAM:/data/bam_files \
-      -v $(pwd)/REF/genome:/data/ref_genome \
-      -v $(pwd)/REF/index:/data/ref_index \
-      -v $(pwd)/REF/recal:/data/vcf_files \
-      -v $(pwd)/Temp:/data/output_data \
-      --user $(id -u):$(id -g) \
-      --rm \
-      srp33/somatic_wgs:$tag \
-      base_recalibrator \
-        -b $bam_file \
-        -t $num_threads \
-        -r $ref_genome_version.fa \
-        -s Mills_and_1000G_gold_standard.indels.hg38.vcf \
-        -s dbsnp_146.hg38.vcf \
-        -s 1000G_phase1.snps.high_confidence.hg38.vcf \
-        -o $bam_file.recal
-        ## Adding threads pays off, up to 16, according to https://www.biorxiv.org/content/biorxiv/early/2018/06/18/348565.full.pdf
-  fi
+  docker run \
+    -v $(pwd)/BAM:/data/bam_files \
+    -v $(pwd)/REF/genome:/data/ref_genome \
+    -v $(pwd)/REF/index:/data/ref_index \
+    -v $(pwd)/REF/recal:/data/vcf_files \
+    -v $(pwd)/Temp:/data/output_data \
+    --user $(id -u):$(id -g) \
+    --rm \
+    srp33/somatic_wgs:$tag \
+    base_recalibrator \
+      -b $bam_file \
+      -t $num_threads \
+      -r $ref_genome_version.fa \
+      -s Mills_and_1000G_gold_standard.indels.hg38.vcf \
+      -s dbsnp_146.hg38.vcf \
+      -s 1000G_phase1.snps.high_confidence.hg38.vcf \
+      -o $bam_file.recal
+      ## Adding threads pays off, up to 16, according to https://www.biorxiv.org/content/biorxiv/early/2018/06/18/348565.full.pdf
 
   docker run \
     -v $(pwd)/REF/genome:/data/ref_genome \
@@ -46,27 +43,16 @@ function recal {
       -o $bam_file
       ## The recommended number of threads is 3 based on https://www.biorxiv.org/content/biorxiv/early/2018/06/18/348565.full.pdf
 
-
-#mv Temp2/$bam_file BAM/$bam_file
-
-#  docker run \
-#    -v /tmp/bqsr_corrected:/data/bam_files \
-#    --user $(id -u):$(id -g) \
-#    --rm \
-#    srp33/somatic_wgs:$tag \
-#    index_bam \
-#      -b $sampleID.bam \
-#      -t 25
+  mv Temp2/$bam_file BAM/
+  mv Temp2/${bam_file/\.bam/.bai} BAM/$bam_file.bai
 }
 
 mkdir -p Temp Temp2
-#rm -rf Temp/* Temp2/*
+rm -rf Temp/* Temp2/*
 
 for f in BAM/*.bam
 do
   recal $(basename $f)
-break
 done
 
-#mv Temp/*.bam* BAM/
-#rmdir Temp
+rm -rf Temp Temp2

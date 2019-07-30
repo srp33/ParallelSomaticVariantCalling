@@ -1,0 +1,31 @@
+#! /bin/bash
+
+set -o errexit
+
+source variables
+
+mkdir -p VCF
+
+function mutect2 {
+  normal_bam_file="$1"
+  tumor_bam_file="$2"
+  sample_id="$3"
+
+  docker run \
+    -v $(pwd)/BAM:/data/bam_files \
+    -v $(pwd)/REF/genome:/data/ref_genome \
+    -v $(pwd)/REF/index:/data/ref_index \
+    -v $(pwd)/VCF:/data/output_data \
+    --user $(id -u):$(id -g) \
+    --rm \
+    srp33/somatic_wgs:$tag \
+    call_somatic_variants_gatk4 \
+      -n ${normal_bam_file} \
+      -ns ${normal_bam_file/\.bam/} \
+      -t ${tumor_bam_file} \
+      -ts ${tumor_bam_file/\.bam/} \
+      -r $ref_genome_version.fa \
+      -o ${sample_id}.vcf
+}
+
+mutect2 TCRBOA7-N-WGS.bam TCRBOA7-T-WGS.bam TCRBOA7-WGS

@@ -10,8 +10,8 @@ function align {
   sample_prefix="$1"  
   sample_id="$2"
 
-  if [ ! -f BAM/${sample_prefix}.bam ]
-  then
+#  if [ ! -f BAM/${sample_prefix}.bam ]
+#  then
     # I ran some simple tests and confirmed that this approach was faster than sorting as a separate step.
     docker run \
       -v $(pwd)/REF/genome:/data/ref_genome \
@@ -30,7 +30,7 @@ function align {
         --index true \
         -o ${sample_prefix}.bam \
         -t $num_threads
-  fi
+#  fi
 }
 
 align TCRBOA7-N-WEX TCRBOA7-N-WEX
